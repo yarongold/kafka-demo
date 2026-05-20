@@ -1,0 +1,18 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: kafka-ui
+  namespace: kafka-demo
+  labels:
+    app: kafka-ui
+spec:
+  to:
+    kind: Service
+    name: kafka-ui
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None
