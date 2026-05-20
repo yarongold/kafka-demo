@@ -1,0 +1,8 @@
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: producer
+  namespace: kafka-demo
+spec:
+  lookupPolicy:
+    local: true

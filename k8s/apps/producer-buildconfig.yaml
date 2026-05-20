@@ -1,0 +1,17 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: producer
+  namespace: kafka-demo
+spec:
+  source:
+    type: Binary
+    binary: {}
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: producer/Dockerfile
+  output:
+    to:
+      kind: ImageStreamTag
+      name: producer:latest
