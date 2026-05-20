@@ -7,6 +7,7 @@ RUN apt-get update \
 COPY pom.xml .
 COPY common/pom.xml common/
 COPY producer/pom.xml producer/
+COPY consumer/pom.xml consumer/
 RUN mvn -pl producer -am -B dependency:go-offline
 COPY common common
 COPY producer producer

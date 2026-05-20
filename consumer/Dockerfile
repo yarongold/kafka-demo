@@ -6,6 +6,7 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 COPY pom.xml .
 COPY common/pom.xml common/
+COPY producer/pom.xml producer/
 COPY consumer/pom.xml consumer/
 RUN mvn -pl consumer -am -B dependency:go-offline
 COPY common common

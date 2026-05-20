@@ -5,6 +5,12 @@ metadata:
   namespace: kafka-demo
   labels:
     app: consumer
+  annotations:
+    # Resolves bare `image: consumer:latest` against the in-namespace ImageStream
+    # (which has lookupPolicy.local=true) at admission time, so OpenShift rewrites
+    # it to the internal registry URL. Without this, kubelet treats the bare name
+    # as a Docker Hub reference and ImagePullBackOffs.
+    alpha.image.policy.openshift.io/resolve-names: "*"
 spec:
   replicas: 1
   selector:
