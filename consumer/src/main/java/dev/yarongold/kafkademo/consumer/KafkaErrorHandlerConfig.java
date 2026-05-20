@@ -17,7 +17,10 @@ public class KafkaErrorHandlerConfig {
     public DefaultErrorHandler kafkaErrorHandler(KafkaTemplate<Object, Object> kafkaTemplate) {
         DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(
                 kafkaTemplate,
-                (record, ex) -> new TopicPartition(DLQ_TOPIC, record.partition())
+                // -1 tells the Kafka producer to use the broker default partitioner.
+                // The K8s `orders` topic has 3 partitions but `orders-dlq` has only 1,
+                // so we must NOT mirror the source partition number.
+                (record, ex) -> new TopicPartition(DLQ_TOPIC, -1)
         );
         return new DefaultErrorHandler(recoverer, new FixedBackOff(1000L, 2L));
     }

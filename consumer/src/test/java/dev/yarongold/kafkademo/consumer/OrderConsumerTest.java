@@ -7,9 +7,12 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.PartitionInfo;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -29,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -51,15 +55,21 @@ class OrderConsumerTest {
 
         sendOrder(order);
 
-        // No record should land on orders-dlq for a valid order.
+        // Positive signal: the production listener committed an offset on "orders" for
+        // "demo-consumer-group". Without this check the test would pass even if the
+        // listener never started.
+        await().atMost(Duration.ofSeconds(10))
+                .pollInterval(Duration.ofMillis(200))
+                .untilAsserted(() -> assertThat(totalCommittedOffsets("demo-consumer-group", "orders"))
+                        .as("listener should commit at least one offset on 'orders'")
+                        .isGreaterThanOrEqualTo(1L));
+
+        // And no DLQ record should appear for the valid order.
         try (KafkaConsumer<String, String> dlqConsumer = newStringConsumer("dlq-check-" + UUID.randomUUID(), "orders-dlq")) {
-            long deadline = System.currentTimeMillis() + 5_000;
-            while (System.currentTimeMillis() < deadline) {
-                ConsumerRecords<String, String> records = dlqConsumer.poll(Duration.ofMillis(500));
-                assertThat(records.count())
-                        .as("no DLQ records expected for valid order")
-                        .isZero();
-            }
+            ConsumerRecords<String, String> records = dlqConsumer.poll(Duration.ofSeconds(2));
+            assertThat(records.count())
+                    .as("no DLQ records expected for valid order")
+                    .isZero();
         }
     }
 
@@ -124,6 +134,23 @@ class OrderConsumerTest {
         try (KafkaProducer<String, Order> producer = new KafkaProducer<>(producerProps)) {
             producer.send(new ProducerRecord<>("orders", order.customerId(), order));
             producer.flush();
+        }
+    }
+
+    private long totalCommittedOffsets(String groupId, String topic) {
+        Map<String, Object> props = new HashMap<>(KafkaTestUtils.consumerProps(groupId, "false", embeddedKafka));
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        try (KafkaConsumer<String, String> probe = new KafkaConsumer<>(props)) {
+            Set<TopicPartition> partitions = new HashSet<>();
+            for (PartitionInfo info : probe.partitionsFor(topic)) {
+                partitions.add(new TopicPartition(info.topic(), info.partition()));
+            }
+            long total = 0L;
+            for (OffsetAndMetadata om : probe.committed(partitions).values()) {
+                if (om != null) total += om.offset();
+            }
+            return total;
         }
     }
 
