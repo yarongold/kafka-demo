@@ -91,7 +91,10 @@ class OrderProducerTest {
         try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(consumerProps)) {
             consumer.subscribe(Collections.singleton("orders"));
 
-            // Direct calls — counter increments before use, so first call yields ORD-1.
+            // The scheduled bean has been emitting at 200ms throughout the test class lifetime,
+            // so the counter is already > 0 by the time this test runs. We drive 14 extra
+            // direct emits to guarantee a contiguous window covering two multiples of 7;
+            // the actual orderIds are read off the records, not assumed.
             for (int i = 0; i < 14; i++) {
                 orderProducer.emit();
             }
