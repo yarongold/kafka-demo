@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: consumer
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:demo-kafka-kafka-bootstrap:9092}
+    consumer:
+      group-id: demo-consumer-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: dev.yarongold.kafkademo.common
+        spring.json.value.default.type: dev.yarongold.kafkademo.common.Order
+    listener:
+      ack-mode: RECORD
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+
+logging:
+  level:
+    org.apache.kafka: WARN
+    org.springframework.kafka: INFO
