@@ -1,0 +1,40 @@
+# Build output
+target/
+*.jar
+*.war
+*.class
+
+# Maven
+.mvn/
+!.mvn/wrapper/maven-wrapper.jar
+!.mvn/wrapper/maven-wrapper.properties
+
+# IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.project
+.classpath
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Spring Boot
+HELP.md
+spring-shell.log
+
+# OpenShift / Kubernetes local
+.kube/
+kubeconfig
+
+# Local dev-environment scaffolding (VS Code Agile Agent Canvas extension)
+.agent/
+.github/agents/
+.github/skills/
